@@ -310,14 +310,16 @@ public struct StartOfAuthorityRecord {
 }
 
 public struct Option {
-    public var code: UInt16
-    public var len: UInt16
-    public var val: Data
+    public private(set) var code: UInt16
+    public private(set) var value: Data
     
-    public init(code: UInt16, val: Data) {
+    public init(code: UInt16, value: Data) {
         self.code = code
-        self.len = UInt16(val.count)
-        self.val = val
+        self.value = value
+    }
+    
+    public var size: UInt16 {
+        return UInt16(value.count)
     }
 }
 

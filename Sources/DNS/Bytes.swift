@@ -484,7 +484,7 @@ extension OptRecord: ResourceRecord {
             let len = try UInt16(data: optionData, position: &count)
             let val = Data(optionData[count...(Int(len) + count - 1)])
             count = count + Int(len)
-            let opt = Option(code: code, val: val)
+            let opt = Option(code: code, value: val)
             self.options.append(opt)
         }
     }
@@ -495,13 +495,13 @@ extension OptRecord: ResourceRecord {
         var rdLen = UInt16(0)
         let rdHdrLen = UInt16(4)
         for opt in options {
-            rdLen += opt.len + rdHdrLen
+            rdLen += opt.size + rdHdrLen
         }
         
         buffer.append(contentsOf: rdLen.bytes)
         
         for opt in options {
-            buffer.append(contentsOf: opt.code.bytes + opt.len.bytes + opt.val)
+            buffer.append(contentsOf: opt.code.bytes + opt.size.bytes + opt.value)
         }
     }
 }
