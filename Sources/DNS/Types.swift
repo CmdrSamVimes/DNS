@@ -8,6 +8,7 @@ public extension InternetClass {
     static let hesiod: InternetClass = 4 // HS
     static let none: InternetClass = 254
     static let any: InternetClass = 255
+    static let ednsMin: InternetClass = 4096
 }
 
 public struct Question {
@@ -49,6 +50,7 @@ public extension ResourceRecordType {
     static let service: ResourceRecordType = 0x0021
     static let incrementalZoneTransfer: ResourceRecordType = 0x00fb
     static let standardZoneTransfer: ResourceRecordType = 0x00fc
+    static let opt: ResourceRecordType = 0x0029
     static let all: ResourceRecordType = 0x00ff // All cached records
 }
 
@@ -66,6 +68,7 @@ extension ResourceRecordType: CustomDebugStringConvertible {
         case .service: return "SRV"
         case .incrementalZoneTransfer: return "IXFR"
         case .standardZoneTransfer: return "AXFR"
+        case .opt: return "OPT"
         case .all: return "*"
         default: return "Unknown"
         }
@@ -303,5 +306,37 @@ public struct StartOfAuthorityRecord {
         self.retry = retry
         self.expire = expire
         self.minimum = minimum
+    }
+}
+
+public struct Option {
+    public var code: UInt16
+    public var len: UInt16
+    public var val: Data
+    
+    public init(code: UInt16, val: Data) {
+        self.code = code
+        self.len = UInt16(val.count)
+        self.val = val
+    }
+}
+
+public struct OptRecord {
+    public var name: String
+    public var type: UInt16
+    public var internetClass: InternetClass
+    public var unique: Bool
+    public var ttl: UInt32
+    public var len: UInt16
+    public var options: [Option]
+
+    public init(name: String, type: UInt16, internetClass: InternetClass, unique: Bool, ttl: UInt32, len: UInt16, options: [Option]) {
+        self.name = name
+        self.type = type
+        self.internetClass = internetClass
+        self.unique = unique
+        self.ttl = ttl
+        self.len = len
+        self.options = options
     }
 }

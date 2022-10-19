@@ -108,6 +108,7 @@ func deserializeRecord(_ data: Data, _ position: inout Data.Index) throws -> Res
     case .startOfAuthority: return try StartOfAuthorityRecord(deserialize: data, position: &position, common: common)
     case .nameServer: return try NameServerRecord(deserialize: data, position: &position, common: common)
     case .mailExchange: return try MailExchangeRecord(deserialize: data, position: &position, common: common)
+    case .opt: return try OptRecord(deserialize: data, position: &position, common: common)
     default: return try Record(deserialize: data, position: &position, common: common)
     }
 }
@@ -461,5 +462,46 @@ extension StartOfAuthorityRecord: ResourceRecord {
         // Set the length before the data field
         let length = UInt16(buffer.endIndex - startPosition)
         buffer.replaceSubrange((startPosition - 2)..<startPosition, with: length.bytes)
+    }
+}
+
+extension OptRecord: ResourceRecord {
+    init(deserialize data: Data, position: inout Data.Index, common: RecordCommonFields) throws {
+        (name, type, unique, internetClass, ttl) = common
+        self.len = try UInt16(data: data, position: &position)
+        let size = Int(self.len)
+        let dataStart = position
+        guard data.formIndex(&position, offsetBy: size, limitedBy: data.endIndex) else {
+            throw DecodeError.invalidDataSize
+        }
+        
+        self.options = []
+        let optionData = Data(data[dataStart..<position])
+        var count = optionData.startIndex
+        
+        while (count < optionData.count) {
+            let code = try UInt16(data: optionData, position: &count)
+            let len = try UInt16(data: optionData, position: &count)
+            let val = Data(optionData[count...(Int(len) + count - 1)])
+            count = count + Int(len)
+            let opt = Option(code: code, val: val)
+            self.options.append(opt)
+        }
+    }
+
+    public func serialize(onto buffer: inout Data, labels: inout Labels) throws {
+        try serializeRecordCommonFields((name, type, unique, internetClass, ttl), onto: &buffer, labels: &labels)
+        
+        var rdLen = UInt16(0)
+        let rdHdrLen = UInt16(4)
+        for opt in options {
+            rdLen += opt.len + rdHdrLen
+        }
+        
+        buffer.append(contentsOf: rdLen.bytes)
+        
+        for opt in options {
+            buffer.append(contentsOf: opt.code.bytes + opt.len.bytes + opt.val)
+        }
     }
 }
